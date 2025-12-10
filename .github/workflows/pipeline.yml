@@ -123,10 +123,20 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
 
+      - name: Install GKE Auth Plugin
+        run: |
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+          sudo apt-get update
+          sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+
       - name: Install kubectl
         run: |
-          sudo apt-get update
           sudo apt-get install -y kubectl
+
+      - name: Configure Auth Plugin
+        run: |
+          echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
 
       - name: Get GKE credentials
         run: |
@@ -138,7 +148,7 @@ jobs:
 
       - name: Deploy API to GKE
         run: |
-          kubectl apply -f k8s/api-deployment.yaml --validate=false
+          kubectl apply -f k8s/api-deployment.yaml
 
   # -----------------------------------------------------------
   # 5. NOTIFICATION
@@ -148,4 +158,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Completion
-        run: echo "CI/CD pipeline completed successfully!"# Updated pipeline
+        run: echo "CI/CD pipeline completed successfully!"
