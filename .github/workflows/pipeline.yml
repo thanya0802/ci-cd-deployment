@@ -107,6 +107,9 @@ jobs:
   # -----------------------------------------------------------
   # 4. DEPLOY API TO GKE
   # -----------------------------------------------------------
+  # -----------------------------------------------------------
+  # 4. DEPLOY API TO GKE
+  # -----------------------------------------------------------
   deploy-api-gke:
     needs: build-deploy-ui
     runs-on: ubuntu-latest
@@ -130,19 +133,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y kubectl
 
-      - name: Get GKE credentials
+      - name: Get GKE credentials (with --disable-plugin)
         run: |
-          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }}
+          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} **--disable-plugin**
 
       - name: Prepare API YAML
         run: |
           sed -i "s|PROJECT_ID|${{ env.PROJECT_ID }}|g" k8s/api-deployment.yaml
 
-      - name: Deploy API to GKE (no validation)
+      - name: Deploy API to GKE
+        # The connection error is fixed above. No need for --validate=false anymore.
         run: |
-          kubectl apply --validate=false -f k8s/api-deployment.yaml
-
-
+          kubectl apply -f k8s/api-deployment.yaml
 # -----------------------------------------------------------
   # 5. NOTIFICATION
   # -----------------------------------------------------------
