@@ -108,37 +108,32 @@ jobs:
   # 4. DEPLOY API TO GKE
   # -----------------------------------------------------------
   deploy-api-gke:
-    needs: build-deploy-ui
-    runs-on: ubuntu-latest
+   needs: build-deploy-ui
+   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+   steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v1
+    - name: Set up gcloud
+      uses: google-github-actions/setup-gcloud@v1
 
-      - name: Get GKE credentials
-        run: |
-          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} \
-            --zone ${{ env.GKE_ZONE }}
+    - name: Install GKE Auth Plugin
+      run: |
+        sudo apt-get update
+        sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
 
-      - name: Deploy API to GKE
-        run: |
-          sed -i "s|PROJECT_ID|${{ env.PROJECT_ID }}|g" k8s/api-deployment.yaml
-          kubectl apply -f k8s/api-deployment.yaml
+    - name: Get GKE credentials
+      run: |
+        gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} \
+          --zone ${{ env.GKE_ZONE }}
 
-  # -----------------------------------------------------------
-  # 5. NOTIFICATION
-  # -----------------------------------------------------------
-  notification:
-    needs: deploy-api-gke
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify Completion
-        run: echo "CI/CD pipeline completed successfully!"
+    - name: Deploy API to GKE
+      run: |
+        sed -i "s|PROJECT_ID|${{ env.PROJECT_ID }}|g" k8s/api-deployment.yaml
+        kubectl apply -f k8s/api-deployment.yaml
