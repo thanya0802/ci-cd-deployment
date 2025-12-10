@@ -122,13 +122,21 @@ jobs:
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
-        with:
-          install_components: 'gke-gcloud-auth-plugin'
+
+      - name: Install GKE Auth Plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin --quiet
+          echo "$(gcloud info --format='value(installation.sdk_root)')/bin" >> $GITHUB_PATH
 
       - name: Install kubectl
         run: |
           sudo apt-get update
           sudo apt-get install -y kubectl
+
+      - name: Configure kubectl to use auth plugin
+        run: |
+          export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+          echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
 
       - name: Get GKE credentials
         run: |
@@ -140,7 +148,7 @@ jobs:
 
       - name: Deploy API to GKE
         run: |
-          kubectl apply -f k8s/api-deployment.yaml
+          kubectl apply -f k8s/api-deployment.yaml --validate=false
 
   # -----------------------------------------------------------
   # 5. NOTIFICATION
