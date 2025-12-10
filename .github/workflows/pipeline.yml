@@ -112,32 +112,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-    - name: Set up gcloud CLI
-      uses: google-github-actions/setup-gcloud@v1
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
 
-    - name: Install GKE Auth Plugin
-      run: |
-        echo "Adding Google Cloud SDK repo"
-        echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
-        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-        sudo apt-get update -y
-        sudo apt-get install -y google-cloud-cli google-cloud-sdk-gke-gcloud-auth-plugin kubectl
+      - name: Install GKE Auth Plugin
+        run: |
+          echo "Adding Google Cloud SDK repo"
+          sudo apt-get update -y
+          sudo apt-get install -y apt-transport-https ca-certificates gnupg
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
+            sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+          curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+            sudo tee /usr/share/keyrings/cloud.google.gpg >/dev/null
+          sudo apt-get update -y
+          sudo apt-get install -y google-cloud-cli google-cloud-sdk-gke-gcloud-auth-plugin kubectl
 
-    - name: Get GKE credentials
-      run: |
-        gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} \
-          --zone ${{ env.GKE_ZONE }}
+      - name: Get GKE credentials
+        run: |
+          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }}
 
-    - name: Deploy API to GKE
-      run: |
-        sed -i "s|PROJECT_ID|${{ env.PROJECT_ID }}|g" k8s/api-deployment.yaml
-        kubectl apply -f k8s/api-deployment.yaml --validate=false
-d
+      - name: Deploy API to GKE
+        run: |
+          sed -i "s|PROJECT_ID|${{ env.PROJECT_ID }}|g" k8s/api-deployment.yaml
+          kubectl apply -f k8s/api-deployment.yaml --validate=false
+
+  # -----------------------------------------------------------
+  # 5. NOTIFICATION
+  # -----------------------------------------------------------
+  notification:
+    needs: deploy-api-gke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Completion
+        run: echo "CI/CD pipeline completed successfully!"
